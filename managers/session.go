@@ -3,6 +3,8 @@ package managers
 import (
 	tea "github.com/charmbracelet/bubbletea"
 
+	"math/rand"
+
 	"github.com/Ashutoshbind15/ssh-chess/common"
 )
 
@@ -36,9 +38,12 @@ func (s SessionManager) StartPairing(fingerprint string) tea.Cmd {
 
 		for i, user := range s.Users {
 			if user.currentStatus == "unpaired" && user.fingerprint != fingerprint {
-				user.program.Send(common.PairedResponse{Opponent: fingerprint})
+
+				randomColor := rand.Intn(2) == 0
+
+				user.program.Send(common.PairedResponse{Opponent: fingerprint, Color: randomColor})
 				cuserProgram := s.UserProgram[fingerprint]
-				cuserProgram.Send(common.PairedResponse{Opponent: user.fingerprint})
+				cuserProgram.Send(common.PairedResponse{Opponent: user.fingerprint, Color: !randomColor})
 
 				// update the current status of the current user and the opponent
 				s.Users[i].currentStatus = "paired"

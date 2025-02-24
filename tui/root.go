@@ -31,6 +31,8 @@ type model struct {
 	currentPage    string
 	sessionManager *managers.SessionManager
 	statusText     string
+	chessBoard     [8][8]string
+	color          bool
 }
 
 func NewModel(renderer *lipgloss.Renderer, fingerprint string, sessionManager *managers.SessionManager) model {
@@ -103,6 +105,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case common.PairedResponse:
 		m.statusText = "paired with " + msg.Opponent
+		m.currentPage = "chess"
+		m.color = msg.Color
 		return m, nil
 
 	}
@@ -114,6 +118,9 @@ func (m model) View() string {
 	switch m.currentPage {
 	case "home":
 		return m.IntroPageRenderer()
+	case "chess":
+		m.chessBoard = InitRepresentation()
+		return RenderChessPage(m.chessBoard, m.color)
 	}
 	return ""
 }

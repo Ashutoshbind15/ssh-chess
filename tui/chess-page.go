@@ -37,6 +37,19 @@ func InitRepresentation() [8][8]string {
 	return board
 }
 
-func RenderChessPage(board [8][8]string) string {
+func ReverseBoardSide(board [8][8]string) [8][8]string {
+	reversed := [8][8]string{}
+	for i := 0; i < 8; i++ {
+		for j := 0; j < 8; j++ {
+			reversed[7-i][7-j] = board[i][j]
+		}
+	}
+	return reversed
+}
+
+func RenderChessPage(board [8][8]string, color bool) string {
+	if color {
+		return RenderBoard(ReverseBoardSide(board))
+	}
 	return RenderBoard(board)
 }

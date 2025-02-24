@@ -6,4 +6,5 @@ type Pingpong struct {
 
 type PairedResponse struct {
 	Opponent string
+	Color    bool
 }

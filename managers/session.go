@@ -24,11 +24,14 @@ func (s *SessionManager) AddUser(fingerprint string, program *tea.Program) {
 	s.Users = append(s.Users, User{fingerprint: fingerprint, currentStatus: "unpaired", program: program})
 }
 
-func NewSessionManager(gameManager *GameManager) *SessionManager {
+func NewSessionManager() *SessionManager {
 	return &SessionManager{
 		UserProgram: make(map[string]*tea.Program),
-		gameManager: gameManager,
 	}
+}
+
+func (s *SessionManager) SetGameManager(gameManager *GameManager) {
+	s.gameManager = gameManager
 }
 
 func (s SessionManager) StartPairing(fingerprint string) tea.Cmd {

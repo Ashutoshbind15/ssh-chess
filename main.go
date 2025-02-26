@@ -29,9 +29,13 @@ const (
 )
 
 var gameManager = managers.NewGameManager()
-var sessionManager = managers.NewSessionManager(gameManager)
+var sessionManager = managers.NewSessionManager()
 
 func main() {
+
+	gameManager.SetSessionManager(sessionManager)
+	sessionManager.SetGameManager(gameManager)
+
 	s, err := wish.NewServer(
 		wish.WithAddress(net.JoinHostPort(host, port)),
 		wish.WithHostKeyPath(".ssh/id_ed25519"),

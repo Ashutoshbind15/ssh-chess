@@ -19,13 +19,20 @@ func convertToChessboardPosition(x, y int, color bool) string {
 }
 
 func (m model) RenderBoard(board [8][8]string) string {
+
 	cellStyle := m.renderer.NewStyle().Padding(0, 1).Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("240"))
+	var cell string
 
 	rows := make([]string, 8)
 	for i := 0; i < 8; i++ {
 		cells := make([]string, 8)
 		for j := 0; j < 8; j++ {
-			cells[j] = m.zone.Mark(convertToChessboardPosition(j, i, m.color), cellStyle.Render(board[i][j]))
+			if m.selected == convertToChessboardPosition(j, i, m.color) {
+				cell = cellStyle.UnsetBorderForeground().BorderForeground(lipgloss.Color("190")).Render(board[i][j])
+			} else {
+				cell = cellStyle.Render(board[i][j])
+			}
+			cells[j] = m.zone.Mark(convertToChessboardPosition(j, i, m.color), cell)
 		}
 		rows[i] = lipgloss.JoinHorizontal(lipgloss.Left, cells...)
 	}
@@ -105,20 +112,34 @@ func (m model) RenderChessPage() string {
 func (m model) chessUpdate(msg tea.Msg) (model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.MouseMsg:
-		fmt.Println("mouse msg", msg)
 
 		if msg.Action != tea.MouseActionRelease || msg.Button != tea.MouseButtonLeft {
 			return m, nil
 		}
 
 		// iterate over all the zones and check if the mouse is over any of them, each zone being a string from a8 to h1
+
+		doesClick := false
+
 		for i := 0; i < 8; i++ {
 			for j := 0; j < 8; j++ {
 				if m.zone.Get(convertToChessboardPosition(j, i, m.color)).InBounds(msg) {
-					fmt.Println("mouse is over", convertToChessboardPosition(j, i, m.color))
+					doesClick = true
+					if m.selected == "" {
+						m.selected = convertToChessboardPosition(j, i, m.color)
+					} else {
+						tcmd := m.gameManager.MakeMove(m.gameId, m.selected, convertToChessboardPosition(j, i, m.color))
+						m.selected = ""
+						return m, tcmd
+					}
 				}
 			}
 		}
+
+		if !doesClick {
+			m.selected = ""
+		}
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "esc":

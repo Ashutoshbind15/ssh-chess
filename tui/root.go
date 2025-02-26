@@ -38,6 +38,7 @@ type model struct {
 	chessBoard  string
 	gameId      string
 	color       bool
+	selected    string
 
 	renderer        *lipgloss.Renderer
 	theme           theme.Theme
@@ -79,6 +80,7 @@ func NewModel(renderer *lipgloss.Renderer, fingerprint string, sessionManager *m
 		chessBoard:     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
 		gameId:         "",
 		zone:           zone.New(),
+		selected:       "",
 	}
 
 	return m
@@ -117,7 +119,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.currentPage = "chess"
 		m.color = msg.Color
 		m.gameId = msg.GameID
-		fmt.Println("gameId", m.gameId)
 
 	case common.BoardUpdateResponse:
 		m.chessBoard = msg.Fen

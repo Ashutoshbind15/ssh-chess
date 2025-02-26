@@ -1,6 +1,9 @@
 package tui
 
 import (
+	"fmt"
+
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -58,4 +61,20 @@ func (m model) RenderChessPage(board [8][8]string) string {
 	res += m.txtStyle.Render(m.fingerprint)
 
 	return res
+}
+
+func (m model) chessUpdate(msg tea.Msg) (model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.MouseMsg:
+		fmt.Println("mouse msg", msg)
+
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "esc":
+			m.currentPage = "home"
+			return m, nil
+		}
+	}
+
+	return m, nil
 }

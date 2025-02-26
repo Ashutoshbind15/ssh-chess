@@ -88,11 +88,6 @@ func PingServer() tea.Msg {
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
-	var (
-		cmd  tea.Cmd
-		cmds []tea.Cmd
-	)
-
 	switch msg := msg.(type) {
 
 	case common.Pingpong:
@@ -105,13 +100,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Todo: cleanup the user from the session manager
 			m.sessionManager.UserProgram[m.fingerprint] = nil
 			return m, tea.Quit
-		case "p":
-			m.status = -1
-			m.msg = "loading"
-			cmd = PingServer
-		case "s":
-			m.statusText = "waiting for pairing up"
-			cmd = m.sessionManager.StartPairing(m.fingerprint)
 		}
 
 	case common.PairedResponse:
@@ -135,6 +123,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.viewport.Height = msg.Height - verticalMarginHeight
 		}
 
+	}
+
+	var (
+		cmd  tea.Cmd
+		cmds []tea.Cmd
+	)
+
+	switch m.currentPage {
+	case "home":
+		m, cmd = m.IntroPageUpdate(msg)
+	case "chess":
+		m, cmd = m.chessUpdate(msg)
 	}
 
 	if cmd != nil {

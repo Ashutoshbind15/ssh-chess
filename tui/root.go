@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
-
 	"github.com/Ashutoshbind15/ssh-chess/common"
 	"github.com/Ashutoshbind15/ssh-chess/managers"
+	"github.com/Ashutoshbind15/ssh-chess/theme"
+	"github.com/charmbracelet/bubbles/viewport"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type serverRespUIModel struct {
@@ -18,21 +19,25 @@ type serverRespUIModel struct {
 }
 
 type model struct {
-	term           string
-	profile        string
-	bg             string
-	txtStyle       lipgloss.Style
-	quitStyle      lipgloss.Style
-	status         int
-	msg            string
-	serverResp     serverRespUIModel
-	fingerprint    string
-	ctx            context.Context
-	currentPage    string
-	sessionManager *managers.SessionManager
-	statusText     string
-	chessBoard     [8][8]string
-	color          bool
+	term            string
+	profile         string
+	bg              string
+	txtStyle        lipgloss.Style
+	quitStyle       lipgloss.Style
+	status          int
+	msg             string
+	serverResp      serverRespUIModel
+	fingerprint     string
+	ctx             context.Context
+	currentPage     string
+	sessionManager  *managers.SessionManager
+	statusText      string
+	chessBoard      [8][8]string
+	color           bool
+	renderer        *lipgloss.Renderer
+	theme           theme.Theme
+	viewport        viewport.Model
+	isViewportReady bool
 }
 
 func NewModel(renderer *lipgloss.Renderer, fingerprint string, sessionManager *managers.SessionManager) model {
@@ -62,6 +67,9 @@ func NewModel(renderer *lipgloss.Renderer, fingerprint string, sessionManager *m
 		fingerprint:    fingerprint,
 		sessionManager: sessionManager,
 		currentPage:    "home",
+		renderer:       renderer,
+		theme:          theme.BasicTheme(renderer),
+		chessBoard:     InitRepresentation(),
 	}
 
 	return m
@@ -79,13 +87,17 @@ func PingServer() tea.Msg {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+
+	var (
+		cmd  tea.Cmd
+		cmds []tea.Cmd
+	)
+
 	switch msg := msg.(type) {
 
 	case common.Pingpong:
-		fmt.Println("pong from the server")
 		m.status = 1
 		m.msg = msg.Msg
-		fmt.Println("m.fingerprint", m.fingerprint)
 
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -96,31 +108,67 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "p":
 			m.status = -1
 			m.msg = "loading"
-			return m, PingServer
+			cmd = PingServer
 		case "s":
 			m.statusText = "waiting for pairing up"
-			return m, m.sessionManager.StartPairing(m.fingerprint)
-
+			cmd = m.sessionManager.StartPairing(m.fingerprint)
 		}
 
 	case common.PairedResponse:
 		m.statusText = "paired with " + msg.Opponent
 		m.currentPage = "chess"
 		m.color = msg.Color
-		return m, nil
+
+	case tea.WindowSizeMsg:
+
+		headerHeight := lipgloss.Height(m.headerView())
+		footerHeight := lipgloss.Height(m.footerView())
+		verticalMarginHeight := headerHeight + footerHeight
+
+		if !m.isViewportReady {
+			m.viewport = viewport.New(msg.Width, msg.Height-verticalMarginHeight)
+			m.viewport.YPosition = headerHeight
+			m.viewport.SetContent(m.getContent())
+			m.isViewportReady = true
+		} else {
+			m.viewport.Width = msg.Width
+			m.viewport.Height = msg.Height - verticalMarginHeight
+		}
 
 	}
 
-	return m, nil
+	if cmd != nil {
+		cmds = append(cmds, cmd)
+	}
+
+	m.viewport.SetContent(m.getContent())
+	m.viewport, cmd = m.viewport.Update(msg)
+	cmds = append(cmds, cmd)
+
+	return m, tea.Batch(cmds...)
 }
 
 func (m model) View() string {
+	if !m.isViewportReady {
+		return ""
+	}
+	return lipgloss.JoinVertical(lipgloss.Center, m.headerView(), m.viewport.View(), m.footerView())
+}
+
+func (m model) getContent() string {
 	switch m.currentPage {
 	case "home":
 		return m.IntroPageRenderer()
 	case "chess":
-		m.chessBoard = InitRepresentation()
-		return RenderChessPage(m.chessBoard, m.color)
+		return m.RenderChessPage(m.chessBoard)
 	}
+	return ""
+}
+
+func (m model) headerView() string {
+	return ""
+}
+
+func (m model) footerView() string {
 	return ""
 }

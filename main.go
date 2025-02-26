@@ -86,7 +86,7 @@ func myCustomBubbleteaMiddleware() wish.Middleware {
 		fingerprint := s.Context().Value("fingerprint").(string)
 
 		m := tui.NewModel(renderer, fingerprint, sessionManager)
-		pg := newProg(m, append(bubbletea.MakeOptions(s), tea.WithAltScreen())...)
+		pg := newProg(m, append(bubbletea.MakeOptions(s), tea.WithAltScreen(), tea.WithMouseCellMotion())...)
 		sessionManager.UserProgram[fingerprint] = pg
 		sessionManager.AddUser(fingerprint, pg)
 		return pg

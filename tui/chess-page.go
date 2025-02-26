@@ -1,13 +1,10 @@
 package tui
 
 import (
-	"os"
-
 	"github.com/charmbracelet/lipgloss"
 )
 
-func RenderBoard(board [8][8]string) string {
-	renderer := lipgloss.NewRenderer(os.Stdout)
+func RenderBoard(board [8][8]string, renderer *lipgloss.Renderer) string {
 	cellStyle := renderer.NewStyle().Padding(0, 1).Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("240"))
 
 	rows := make([]string, 8)
@@ -47,9 +44,18 @@ func ReverseBoardSide(board [8][8]string) [8][8]string {
 	return reversed
 }
 
-func RenderChessPage(board [8][8]string, color bool) string {
-	if color {
-		return RenderBoard(ReverseBoardSide(board))
+func (m model) RenderChessPage(board [8][8]string) string {
+
+	res := ""
+
+	if m.color {
+		res += RenderBoard(ReverseBoardSide(board), m.renderer)
+	} else {
+		res += RenderBoard(board, m.renderer)
 	}
-	return RenderBoard(board)
+
+	res += "\n\n"
+	res += m.txtStyle.Render(m.fingerprint)
+
+	return res
 }

@@ -28,7 +28,8 @@ const (
 	port = "23234"
 )
 
-var sessionManager = managers.NewSessionManager()
+var gameManager = managers.NewGameManager()
+var sessionManager = managers.NewSessionManager(gameManager)
 
 func main() {
 	s, err := wish.NewServer(
@@ -85,7 +86,7 @@ func myCustomBubbleteaMiddleware() wish.Middleware {
 		renderer := bubbletea.MakeRenderer(s)
 		fingerprint := s.Context().Value("fingerprint").(string)
 
-		m := tui.NewModel(renderer, fingerprint, sessionManager)
+		m := tui.NewModel(renderer, fingerprint, sessionManager, gameManager)
 		pg := newProg(m, append(bubbletea.MakeOptions(s), tea.WithAltScreen(), tea.WithMouseCellMotion())...)
 		sessionManager.UserProgram[fingerprint] = pg
 		sessionManager.AddUser(fingerprint, pg)

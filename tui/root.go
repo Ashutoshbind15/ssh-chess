@@ -31,8 +31,10 @@ type model struct {
 	ctx             context.Context
 	currentPage     string
 	sessionManager  *managers.SessionManager
+	gameManager     *managers.GameManager
 	statusText      string
 	chessBoard      [8][8]string
+	gameId          string
 	color           bool
 	renderer        *lipgloss.Renderer
 	theme           theme.Theme
@@ -40,7 +42,7 @@ type model struct {
 	isViewportReady bool
 }
 
-func NewModel(renderer *lipgloss.Renderer, fingerprint string, sessionManager *managers.SessionManager) model {
+func NewModel(renderer *lipgloss.Renderer, fingerprint string, sessionManager *managers.SessionManager, gameManager *managers.GameManager) model {
 
 	bg := "light"
 	if renderer.HasDarkBackground() {
@@ -66,10 +68,12 @@ func NewModel(renderer *lipgloss.Renderer, fingerprint string, sessionManager *m
 		ctx:            ctx,
 		fingerprint:    fingerprint,
 		sessionManager: sessionManager,
+		gameManager:    gameManager,
 		currentPage:    "home",
 		renderer:       renderer,
 		theme:          theme.BasicTheme(renderer),
 		chessBoard:     InitRepresentation(),
+		gameId:         "",
 	}
 
 	return m
@@ -106,6 +110,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.statusText = "paired with " + msg.Opponent
 		m.currentPage = "chess"
 		m.color = msg.Color
+		m.gameId = msg.GameID
+		fmt.Println("gameId", m.gameId)
 
 	case tea.WindowSizeMsg:
 

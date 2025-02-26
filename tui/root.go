@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	zone "github.com/lrstanley/bubblezone"
 )
 
 type serverRespUIModel struct {
@@ -19,27 +20,30 @@ type serverRespUIModel struct {
 }
 
 type model struct {
-	term            string
-	profile         string
-	bg              string
-	txtStyle        lipgloss.Style
-	quitStyle       lipgloss.Style
-	status          int
-	msg             string
-	serverResp      serverRespUIModel
-	fingerprint     string
-	ctx             context.Context
-	currentPage     string
-	sessionManager  *managers.SessionManager
-	gameManager     *managers.GameManager
-	statusText      string
-	chessBoard      [8][8]string
-	gameId          string
-	color           bool
+	term           string
+	profile        string
+	bg             string
+	txtStyle       lipgloss.Style
+	quitStyle      lipgloss.Style
+	status         int
+	msg            string
+	serverResp     serverRespUIModel
+	fingerprint    string
+	ctx            context.Context
+	currentPage    string
+	sessionManager *managers.SessionManager
+
+	gameManager *managers.GameManager
+	statusText  string
+	chessBoard  string
+	gameId      string
+	color       bool
+
 	renderer        *lipgloss.Renderer
 	theme           theme.Theme
 	viewport        viewport.Model
 	isViewportReady bool
+	zone            *zone.Manager
 }
 
 func NewModel(renderer *lipgloss.Renderer, fingerprint string, sessionManager *managers.SessionManager, gameManager *managers.GameManager) model {
@@ -72,8 +76,9 @@ func NewModel(renderer *lipgloss.Renderer, fingerprint string, sessionManager *m
 		currentPage:    "home",
 		renderer:       renderer,
 		theme:          theme.BasicTheme(renderer),
-		chessBoard:     InitRepresentation(),
+		chessBoard:     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
 		gameId:         "",
+		zone:           zone.New(),
 	}
 
 	return m
@@ -103,6 +108,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "q", "ctrl+c":
 			// Todo: cleanup the user from the session manager
 			m.sessionManager.UserProgram[m.fingerprint] = nil
+			m.zone.Close()
 			return m, tea.Quit
 		}
 
@@ -112,6 +118,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.color = msg.Color
 		m.gameId = msg.GameID
 		fmt.Println("gameId", m.gameId)
+
+	case common.BoardUpdateResponse:
+		m.chessBoard = msg.Fen
 
 	case tea.WindowSizeMsg:
 
@@ -155,10 +164,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	if !m.isViewportReady {
-		return ""
+	if !m.isViewportReady || m.zone == nil {
+		return "initializing..."
 	}
-	return lipgloss.JoinVertical(lipgloss.Center, m.headerView(), m.viewport.View(), m.footerView())
+	return m.zone.Scan(lipgloss.JoinVertical(lipgloss.Center, m.headerView(), m.viewport.View(), m.footerView()))
 }
 
 func (m model) getContent() string {
@@ -166,7 +175,7 @@ func (m model) getContent() string {
 	case "home":
 		return m.IntroPageRenderer()
 	case "chess":
-		return m.RenderChessPage(m.chessBoard)
+		return m.RenderChessPage()
 	}
 	return ""
 }
